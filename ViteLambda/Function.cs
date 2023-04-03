@@ -20,9 +20,6 @@ public class Function
     /// <returns></returns>
     public PayloadResponse FunctionHandler(Payload input, ILambdaContext context)
     {
-
-        if ()
-
         return new PayloadResponse(input)
         {
             Headers="what?"
