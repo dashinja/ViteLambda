@@ -1,4 +1,5 @@
 using Amazon.Lambda.Core;
+using Amazon.Lambda.APIGatewayEvents;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
@@ -18,11 +19,18 @@ public class Function
     /// <param name="input"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    public PayloadResponse FunctionHandler(Payload input, ILambdaContext context)
+    public APIGatewayProxyResponse FunctionHandler(APIGatewayProxyResponse input, ILambdaContext context)
     {
-        return new PayloadResponse(input)
+        Console.WriteLine("what is input: ", input);
+        return new APIGatewayProxyResponse
         {
-            Headers="what?"
+            Body = input.Body,
+            StatusCode = (int)HttpStatusCode.OK,
+            Headers = new Dictionary<string, string>
+            {
+                {"Content-Type", "application/json"},
+                {"Access-Control-Allow-Origin", "*" }
+            }
         };
     }
 }
@@ -34,9 +42,9 @@ public class Payload
 
 public class PayloadResponse
 {
-    public PayloadResponse(Payload data)
+    public PayloadResponse(int data)
     {
-        this.Data = data.Data;
+        this.Data = data;
     }
     public int Data { get; set; }
     public string? Headers { get; set; }
