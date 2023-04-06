@@ -26,10 +26,10 @@ public class Function
 
         var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
 
-        var submissionCollection = await dbContext.LoadAsync<SubmissionCollection>("submission_list");
+        var submissionCollection = await dbContext.LoadAsync<SubmissionCollection>("list_access");
 
         Console.WriteLine("what is submissionCollection: ", submissionCollection);
-        
+
         return new APIGatewayProxyResponse
         {
             Body = input.Body,
