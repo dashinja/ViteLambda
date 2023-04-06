@@ -24,11 +24,11 @@ public class Function
     public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyResponse input, ILambdaContext context)
     {
 
-        var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+        // var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
 
-        var submissionCollection = await dbContext.LoadAsync<SubmissionCollection>("list_access");
+        // var submissionCollection = await dbContext.LoadAsync("submission_list");
 
-        Console.WriteLine("what is submissionCollection: ", submissionCollection);
+        // Console.WriteLine("what is submissionCollection: ", submissionCollection);
 
         return new APIGatewayProxyResponse
         {
@@ -43,6 +43,11 @@ public class Function
     }
 }
 
+[DynamoDBTable("SubmissionCollection")]
 public class SubmissionCollection {
+    [DynamoDBHashKey]
+    public string? Id {get; set;}
+    
+    [DynamoDBProperty("list_access")]
     public List<int>? Collection {get; set;}
 }
