@@ -14,11 +14,11 @@ public class Function
 {
 
     /// <summary>
-    /// A simple function that takes a string and does a ToUpper
+    /// A simple function that takes an input and returns it as a response.
     /// </summary>
     /// <param name="input"></param>
     /// <param name="context"></param>
-    /// <returns></returns>
+    /// <returns>APIGatewayProxyResponse</returns>
     public APIGatewayProxyResponse FunctionHandler(APIGatewayProxyResponse input, ILambdaContext context)
     {
         Console.WriteLine("what is input: ", input);
@@ -29,23 +29,8 @@ public class Function
             Headers = new Dictionary<string, string>
             {
                 {"Content-Type", "application/json"},
-                {"Access-Control-Allow-Origin", "*" }
-            }
+                {"Access-Control-Allow-Origin", "https://vite-react-ts-dashinja.vercel.app" }
+            },
         };
     }
-}
-
-public class Payload
-{
-    public int Data { get; set; }
-}
-
-public class PayloadResponse
-{
-    public PayloadResponse(int data)
-    {
-        this.Data = data;
-    }
-    public int Data { get; set; }
-    public string? Headers { get; set; }
 }
