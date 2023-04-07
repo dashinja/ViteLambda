@@ -37,6 +37,28 @@ public class Function
     };
   }
 
+  private async Task<APIGatewayHttpApiV2ProxyResponse> HandleGetRequest(APIGatewayHttpApiV2ProxyRequest request)
+  {
+    request.PathParameters.TryGetValue("userId", out var userIdString);
+    if (Guid.TryParse(userIdString, out var userId))
+    {
+
+      var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+      var user = await _dbContext.LoadAsync<User>(userId);
+
+      if (user != null)
+      {
+        return new APIGatewayHttpApiV2ProxyResponse()
+        {
+          Body = System.Text.Json.JsonSerializer.Serialize(user),
+          StatusCode = (int)HttpStatusCode.OK
+        };
+      }
+    }
+
+    return BadResponse("Invalid userId in path");
+  }
+
   private async Task<APIGatewayHttpApiV2ProxyResponse> HandlePostRequest(APIGatewayHttpApiV2ProxyRequest request)
   {
     var user = System.Text.Json.JsonSerializer.Deserialize<User>(request.Body);
@@ -62,27 +84,7 @@ public class Function
     };
   }
 
-  private async Task<APIGatewayHttpApiV2ProxyResponse> HandleGetRequest(APIGatewayHttpApiV2ProxyRequest request)
-  {
-    request.PathParameters.TryGetValue("userId", out var userIdString);
-    if (Guid.TryParse(userIdString, out var userId))
-    {
 
-      var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-      var user = await _dbContext.LoadAsync<User>(userId);
-
-      if (user != null)
-      {
-        return new APIGatewayHttpApiV2ProxyResponse()
-        {
-          Body = System.Text.Json.JsonSerializer.Serialize(user),
-          StatusCode = (int)HttpStatusCode.OK
-        };
-      }
-    }
-
-    return BadResponse("Invalid userId in path");
-  }
 }
 
 [DynamoDBTable("User")]
