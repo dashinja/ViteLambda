@@ -15,39 +15,70 @@ namespace ViteLambda;
 public class Function
 {
 
-    /// <summary>
-    /// A simple function that takes an input and returns it as a response.
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="context"></param>
-    /// <returns>APIGatewayProxyResponse</returns>
-    public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyResponse input, ILambdaContext context)
-    {
+  /// <summary>
+  /// A simple function that takes an input and returns it as a response.
+  /// </summary>
+  /// <param name="input"></param>
+  /// <param name="context"></param>
+  /// <returns>APIGatewayProxyResponse</returns>
+  public async Task<User> FunctionHandler(Guid input, ILambdaContext context)
+  {
 
-        // var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+    var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+    var user = await dbContext.LoadAsync<User>(input);
 
-        // var submissionCollection = await dbContext.LoadAsync("submission_list");
+    return user;
 
-        // Console.WriteLine("what is submissionCollection: ", submissionCollection);
+    // Console.WriteLine("input.body: ", input.Body);
+    // Console.WriteLine("input.body", input.Body);
 
-        return new APIGatewayProxyResponse
-        {
-            Body = input.Body,
-            StatusCode = (int)HttpStatusCode.OK,
-            Headers = new Dictionary<string, string>
-            {
-                {"Content-Type", "application/json"},
-                {"Access-Control-Allow-Origin", "https://vite-react-ts-dashinja.vercel.app" }
-            },
-        };
-    }
+    // understand what the body shape is
+    // must align the types (see attributes DataMember vs. JsonPropertyName)
+    // var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+
+    // var submissionCollection = await dbContext.LoadAsync<User>(input);
+
+    // Console.WriteLine("what is submissionCollection: ", submissionCollection);
+
+    // return new APIGatewayProxyResponse
+    // {
+    //   Body = input.Body,
+    //   StatusCode = (int)HttpStatusCode.OK,
+    //   Headers = new Dictionary<string, string>
+    //         {
+    //             {"Content-Type", "application/json"},
+    //             {"Access-Control-Allow-Origin", "https://vite-react-ts-dashinja.vercel.app" }
+    //         },
+    // };
+  }
 }
 
 [DynamoDBTable("SubmissionCollection")]
-public class SubmissionCollection {
+public class SubmissionCollection
+{
+
+  public SubmissionCollection(string id, int newValue, List<int> collection)
+  {
+    Id = id;
+    Collection = collection;
+    // NewValue = newValue;
+  }
+
+  //   public SubmissionCollection(APIGatewayProxyResponse input) {
+  //     var theBody = System.Text.Json.JsonSerializer.Deserialize<SubmissionCollection>(input);
+  //   }
+
+  [DynamoDBHashKey]
+  public string Id { get; set; }
+
+  public List<int>? Collection { get; set; }
+
+  //   public int NewValue { get; set; }
+}
+
+public class User
+{
     [DynamoDBHashKey]
-    public string? Id {get; set;}
-    
-    [DynamoDBProperty("list_access")]
-    public List<int>? Collection {get; set;}
+  public Guid Id { get; set; }
+  public string Name { get; set; }
 }
