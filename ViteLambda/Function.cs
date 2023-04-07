@@ -28,57 +28,14 @@ public class Function
     var user = await dbContext.LoadAsync<User>(input);
 
     return user;
-
-    // Console.WriteLine("input.body: ", input.Body);
-    // Console.WriteLine("input.body", input.Body);
-
-    // understand what the body shape is
-    // must align the types (see attributes DataMember vs. JsonPropertyName)
-    // var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-
-    // var submissionCollection = await dbContext.LoadAsync<User>(input);
-
-    // Console.WriteLine("what is submissionCollection: ", submissionCollection);
-
-    // return new APIGatewayProxyResponse
-    // {
-    //   Body = input.Body,
-    //   StatusCode = (int)HttpStatusCode.OK,
-    //   Headers = new Dictionary<string, string>
-    //         {
-    //             {"Content-Type", "application/json"},
-    //             {"Access-Control-Allow-Origin", "https://vite-react-ts-dashinja.vercel.app" }
-    //         },
-    // };
   }
 }
 
-[DynamoDBTable("SubmissionCollection")]
-public class SubmissionCollection
-{
-
-  public SubmissionCollection(string id, int newValue, List<int> collection)
-  {
-    Id = id;
-    Collection = collection;
-    // NewValue = newValue;
-  }
-
-  //   public SubmissionCollection(APIGatewayProxyResponse input) {
-  //     var theBody = System.Text.Json.JsonSerializer.Deserialize<SubmissionCollection>(input);
-  //   }
-
-  [DynamoDBHashKey]
-  public string Id { get; set; }
-
-  public List<int>? Collection { get; set; }
-
-  //   public int NewValue { get; set; }
-}
+[DynamoDBTable("User")]
 
 public class User
 {
     [DynamoDBHashKey]
   public Guid Id { get; set; }
-  public string Name { get; set; }
+  public string? Name { get; set; }
 }
