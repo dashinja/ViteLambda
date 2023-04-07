@@ -19,7 +19,6 @@ public class Function
   public Function()
   {
     _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-
   }
   /// <summary>
   /// A simple function that takes an input and returns it as a response.
@@ -29,11 +28,11 @@ public class Function
   /// <returns>APIGatewayProxyResponse</returns>
   public async Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandler(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
   {
-
     return request.RequestContext.Http.Method.ToUpper() switch
     {
       "GET" => await HandleGetRequest(request),
-      "POST" => await HandlePostRequest(request)
+      "POST" => await HandlePostRequest(request),
+      "DELETE" => await HandleDeleteRequest(request)
     };
   }
 
@@ -42,7 +41,6 @@ public class Function
     request.PathParameters.TryGetValue("userId", out var userIdString);
     if (Guid.TryParse(userIdString, out var userId))
     {
-
       var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
       var user = await _dbContext.LoadAsync<User>(userId);
 
@@ -55,7 +53,6 @@ public class Function
         };
       }
     }
-
     return BadResponse("Invalid userId in path");
   }
 
@@ -67,11 +64,30 @@ public class Function
     {
       return BadResponse("Invalid User details");
     }
-
     await _dbContext.SaveAsync(user);
+    return OkResponse();
+  }
+
+  private async Task<APIGatewayHttpApiV2ProxyResponse> HandleDeleteRequest(APIGatewayHttpApiV2ProxyRequest request)
+  {
+    request.PathParameters.TryGetValue("userId", out var userIdString);
+
+    if (Guid.TryParse(userIdString, out var userId))
+    {
+      await _dbContext.DeleteAsync<User>(userId);
+
+      return OkResponse();
+    } else
+    {
+      return BadResponse("Invalid userId in path");
+    }
+  }
+
+  private static APIGatewayHttpApiV2ProxyResponse OkResponse()
+  {
     return new APIGatewayHttpApiV2ProxyResponse()
     {
-      StatusCode = (int)HttpStatusCode.OK
+      StatusCode = (int)HttpStatusCode.OK,
     };
   }
 
@@ -83,8 +99,6 @@ public class Function
       StatusCode = (int)HttpStatusCode.NotFound
     };
   }
-
-
 }
 
 [DynamoDBTable("User")]
