@@ -41,7 +41,6 @@ public class Function
     request.PathParameters.TryGetValue("userId", out var userIdString);
     if (Guid.TryParse(userIdString, out var userId))
     {
-      var dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
       var user = await _dbContext.LoadAsync<User>(userId);
 
       if (user != null)
