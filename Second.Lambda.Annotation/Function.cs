@@ -1,19 +1,19 @@
-using Amazon.Lambda.Core;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using Amazon.Lambda.Annotations;
 using Amazon.Lambda.Annotations.APIGateway;
-using Amazon.DynamoDBv2.DataModel;
-using Amazon.DynamoDBv2;
-using ThirdParty.Json.LitJson;
-using System.Text.Json.Serialization;
+using Amazon.Lambda.Core;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
-namespace Byron.Udemy.LambdaAnnotations;
+namespace Second.Lambda.Annotation;
 
 public class Function
 {
+        
     private readonly DynamoDBContext _dbContext;
+
     public Function()
     {
         _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
@@ -30,27 +30,13 @@ public class Function
     public async Task<User> FunctionHandler(string userId, ILambdaContext context)
     {
         Guid.TryParse(userId, out var id);
-
-        var user = await _dbContext.LoadAsync<User>(id);
-        return user;
-    }
-
-    [LambdaFunction]
-    [HttpApi(LambdaHttpMethod.Post, "/users")]
-    
-    public async Task PostFunctionHandler([FromBody]User user, ILambdaContext context)
-    {
-        await _dbContext.SaveAsync(user);
+        return await _dbContext.LoadAsync<User>(id);
     }
 }
 
-[DynamoDBTable("User")]
 public class User
 {
     [DynamoDBHashKey]
-    [JsonPropertyName("id")]
     public Guid Id { get; set; }
-
-    [JsonPropertyName("name")]
     public string? Name { get; set; }
 }

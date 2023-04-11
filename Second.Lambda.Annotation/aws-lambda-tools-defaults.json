@@ -13,8 +13,8 @@
     "function-runtime"      : "dotnet6",
     "function-memory-size"  : 256,
     "function-timeout"      : 30,
-    "function-handler"      : "Byron.Udemy.LambdaAnnotations::Byron.Udemy.LambdaAnnotations.Function::FunctionHandler",
+    "function-handler"      : "Second.Lambda.Annotation::Second.Lambda.Annotation.Function::FunctionHandler",
     "s3-bucket"             : "test-delete-byronpath",
     "template"              : "serverless.template",
-    "stack-name"            : "v2-udemy-lambda-annotations"
+    "stack-name"            : "second-lambda-annotations"
 }
