@@ -24,6 +24,8 @@ public class Functions
     public Functions()
     {
         _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+        
+        //TODO: Learn to put this in environment variable.
         _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
     }
 
