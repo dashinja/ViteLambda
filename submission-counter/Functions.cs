@@ -18,7 +18,7 @@ public class Functions
 {
     private readonly DynamoDBContext _dbContext;
     private readonly Guid _connectString;
-
+    private List<int> _list;
     /// <summary>
     /// Default constructor.
     /// </summary>
@@ -31,26 +31,41 @@ public class Functions
 
     [LambdaFunction]
     [HttpApi(LambdaHttpMethod.Get, "/submissions")]
-    public async Task<APIGatewayHttpApiV2ProxyResponse> GetListAsync() {
-        Console.WriteLine("_connectString $$$: ", _connectString);
-        var list = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
-        //var list = 0;
+    public async Task<APIGatewayHttpApiV2ProxyResponse> GetListAsync()
+    {
+        SubmissionCollection list = await GetListValue();
+
         if (list != null)
         {
-            return new APIGatewayHttpApiV2ProxyResponse()
-            {
-                StatusCode = (int)HttpStatusCode.OK,
-                Body = System.Text.Json.JsonSerializer.Serialize(list)
-            };
+            return GoodResponse(list);
         }
 
+        return BadRequest();
+
+    }
+
+    private static APIGatewayHttpApiV2ProxyResponse GoodResponse(SubmissionCollection list)
+    {
+        return new APIGatewayHttpApiV2ProxyResponse()
+        {
+            StatusCode = (int)HttpStatusCode.OK,
+            Body = System.Text.Json.JsonSerializer.Serialize(list)
+        };
+    }
+
+    private static APIGatewayHttpApiV2ProxyResponse BadRequest()
+    {
         return new APIGatewayHttpApiV2ProxyResponse()
         {
             StatusCode = (int)HttpStatusCode.BadGateway,
             Body = "Bad Gateway - bah!"
 
         };
-        
+    }
+
+    private async Task<SubmissionCollection> GetListValue()
+    {
+        return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
     }
 
     /// <summary>
