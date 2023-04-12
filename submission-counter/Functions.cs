@@ -18,7 +18,6 @@ public class Functions
 {
     private readonly DynamoDBContext _dbContext;
     private readonly Guid _connectString;
-    private List<int> _list;
     /// <summary>
     /// Default constructor.
     /// </summary>
