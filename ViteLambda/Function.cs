@@ -15,10 +15,12 @@ namespace ViteLambda;
 public class Function
 {
   private readonly DynamoDBContext _dbContext;
+    private readonly Guid _connectString;
 
   public Function()
   {
-    _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+        _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+        _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
   }
   /// <summary>
   /// A simple function that takes an input and returns it as a response.
@@ -38,10 +40,10 @@ public class Function
 
   private async Task<APIGatewayHttpApiV2ProxyResponse> HandleGetRequest(APIGatewayHttpApiV2ProxyRequest request)
   {
-    request.PathParameters.TryGetValue("userId", out var userIdString);
-    if (Guid.TryParse(userIdString, out var userId))
-    {
-      var user = await _dbContext.LoadAsync<User>(userId);
+    //request.PathParameters.TryGetValue("userId", out var userIdString);
+    //if (Guid.TryParse(userIdString, out var userId))
+    //{
+      var user = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
 
       if (user != null)
       {
@@ -51,7 +53,7 @@ public class Function
           StatusCode = (int)HttpStatusCode.OK
         };
       }
-    }
+    //}
     return BadResponse("Invalid userId in path");
   }
 
@@ -98,13 +100,4 @@ public class Function
       StatusCode = (int)HttpStatusCode.NotFound
     };
   }
-}
-
-[DynamoDBTable("User")]
-
-public class User
-{
-  [DynamoDBHashKey]
-  public Guid Id { get; set; }
-  public string? Name { get; set; }
 }
