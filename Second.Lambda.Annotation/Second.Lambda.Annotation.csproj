@@ -9,12 +9,12 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
-    <UserSecretsId>36dfe18c-f0b7-4d26-90a0-3a8d25ae1154</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Annotations" Version="0.13.1" />
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.6.0" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.1" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.102.20" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.102.23" />
   </ItemGroup>
 </Project>
