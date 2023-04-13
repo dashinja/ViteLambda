@@ -60,6 +60,35 @@
           }
         }
       }
+    },
+    "submissioncounterFunctionsDeleteListAsyncGenerated": {
+      "Type": "AWS::Serverless::Function",
+      "Metadata": {
+        "Tool": "Amazon.Lambda.Annotations",
+        "SyncedEvents": [
+          "RootDelete"
+        ]
+      },
+      "Properties": {
+        "Runtime": "dotnet6",
+        "CodeUri": ".",
+        "MemorySize": 256,
+        "Timeout": 30,
+        "Policies": [
+          "AWSLambdaBasicExecutionRole"
+        ],
+        "PackageType": "Zip",
+        "Handler": "submission-counter::submission_counter.Functions_DeleteListAsync_Generated::DeleteListAsync",
+        "Events": {
+          "RootDelete": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/submissions",
+              "Method": "DELETE"
+            }
+          }
+        }
+      }
     }
   },
   "Outputs": {
