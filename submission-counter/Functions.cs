@@ -53,17 +53,33 @@ public class Functions
     /// </summary>
     [LambdaFunction]
     [HttpApi(LambdaHttpMethod.Post, "/submissions")]
-    public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] SubmissionCollection req, ILambdaContext context)
+    public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] SubmissionCollectionRequest req, ILambdaContext context)
     {
-        req.Id = _connectString;
-        await PostListValue(req);
-
-        var newUser = await GetListValue();
-
-        if (newUser != null)
+        try
         {
-            return GoodResponse(newUser);
+            var newUser = await GetListValue();
+
+            if (newUser != null)
+            {
+                newUser.List.Add(req.NewValue);
+
+                var newSubmission = new SubmissionCollection()
+                {
+                    Id = _connectString,
+                    List = newUser.List,
+                };
+
+                await PostListValue(newSubmission);
+
+                return GoodResponse(newSubmission);
+            }
         }
+        catch (Exception)
+        {
+
+            throw new Exception("Submission Failed to Complete");
+        }
+
 
         return BadRequest("Failed to save new submission");
     }
@@ -92,7 +108,19 @@ public class Functions
     /// <returns>SubmissionCollection</returns>
     private async Task<SubmissionCollection> GetListValue()
     {
-        return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+        var result = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+
+        if (result != null)
+        {
+            return result;
+        } else
+        {
+            var init_submission = new SubmissionCollection() { Id = _connectString, List = { } };
+            
+            await _dbContext.SaveAsync<SubmissionCollection>(init_submission);
+
+            return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+        }
     }
 
     private async Task PostListValue(SubmissionCollection newSubmission)
@@ -176,11 +204,21 @@ public class Functions
 //     }
 }
 
-    public class SubmissionCollection
+public class SubmissionCollection
 {
+    public SubmissionCollection() { 
+        Id = Guid.NewGuid();
+        List = new List<int> { };
+    }
+
     [DynamoDBHashKey]
     public Guid Id;
 
-        [JsonPropertyName("list")]
-        public List<int>? List { get; set; }
+    [JsonPropertyName("list")]
+    public List<int> List { get; set; }
+}
+
+public class SubmissionCollectionRequest
+{
+    public int NewValue { get; set; }
 }
