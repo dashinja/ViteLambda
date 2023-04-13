@@ -55,6 +55,7 @@ public class Functions
     [HttpApi(LambdaHttpMethod.Post, "/submissions")]
     public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] SubmissionCollection req, ILambdaContext context)
     {
+        req.Id = _connectString;
         await PostListValue(req);
 
         var newUser = await GetListValue();
