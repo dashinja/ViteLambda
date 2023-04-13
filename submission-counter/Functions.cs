@@ -69,9 +69,17 @@ public class Functions
                     List = newUser.List,
                 };
 
+                try
+                {
                 await PostListValue(newSubmission);
+                    return GoodResponse(newSubmission.List);
+                }
+                catch (Exception)
+                {
 
-                return GoodResponse(newSubmission.List);
+                    new Exception("Post itself failed: BAH!");
+                }
+
             }
         }
         catch (Exception)
