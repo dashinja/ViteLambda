@@ -17,219 +17,171 @@ namespace submission_counter;
 /// </summary>
 public class Functions
 {
-    private readonly DynamoDBContext _dbContext;
-    private readonly Guid _connectString;
-    /// <summary>
-    /// Default constructor.
-    /// </summary>
-    public Functions()
+  private readonly DynamoDBContext _dbContext;
+  private readonly Guid _connectString;
+  /// <summary>
+  /// Default constructor.
+  /// </summary>
+  public Functions()
+  {
+    _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
+
+    //TODO: Learn to put this in environment variable.
+    _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
+  }
+
+  /// <summary>
+  /// Endpoint that returns the submission list to the caller.
+  /// </summary>
+  /// <returns>APIGatewayHttpApiV2ProxyResponse</returns>
+  [LambdaFunction]
+  [HttpApi(LambdaHttpMethod.Get, "/submissions")]
+  public async Task<APIGatewayHttpApiV2ProxyResponse> GetListAsync()
+  {
+    SubmissionCollection list = await GetListValue();
+
+    if (list != null)
     {
-        _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-        
-        //TODO: Learn to put this in environment variable.
-        _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
+      return GoodResponse(list.List);
     }
 
-    /// <summary>
-    /// Endpoint that returns the submission list to the caller.
-    /// </summary>
-    /// <returns>APIGatewayHttpApiV2ProxyResponse</returns>
-    [LambdaFunction]
-    [HttpApi(LambdaHttpMethod.Get, "/submissions")]
-    public async Task<APIGatewayHttpApiV2ProxyResponse> GetListAsync()
+    return BadRequest("List not found", HttpStatusCode.NotFound);
+
+  }
+
+  /// <summary>
+  /// Adds new data to the submission list.
+  /// </summary>
+  [LambdaFunction]
+  [HttpApi(LambdaHttpMethod.Post, "/submissions")]
+  public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] RequestBody request, ILambdaContext context)
+  {
+
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request));
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request.Body));
+
+    try
     {
-        SubmissionCollection list = await GetListValue();
+      var user = await GetListValue();
 
-        if (list != null)
-        {
-            return GoodResponse(list.List);
-        }
-
-        return BadRequest("List not found", HttpStatusCode.NotFound);
-
-    }
-
-    /// <summary>
-    /// Adds new data to the submission list.
-    /// </summary>
-    [LambdaFunction]
-    [HttpApi(LambdaHttpMethod.Post, "/submissions")]
-    public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] RequestBody request, ILambdaContext context)
-    {
-
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request));
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request.Body));
+      if (user != null)
+      {
+        user.List.Add(request.Body);
 
         try
         {
-            Console.WriteLine("Begin try block");
-            var newUser = await GetListValue();
+          PostListValue(user).Wait();
 
-            Console.WriteLine("newUser Received succesfully");
-            Console.WriteLine("newUser $$$$: ", newUser);
-
-
-            if (newUser != null)
-            {
-                Console.WriteLine("newUser is not null");
-
-                var newSubmission = new SubmissionCollection();
-
-                if (newUser.List.Count > 0)
-                {
-                    Console.WriteLine("newUser.List.Count > 0 so...");
-
-                    newUser.List.Add(request.Body);
-                    Console.WriteLine("newUser.List.Add(Int32.Parse(req.Body) Completed");
-
-                    newSubmission = newUser;
-
-                    Console.WriteLine("Add req.Body to newUser");
-                    Console.WriteLine("newSubmission = newUser");
-
-                }
-                else
-                {
-                    Console.WriteLine("newUser has no elements so...");
-                    Console.WriteLine("newSubmission freshly assigned defaults");
-                    Console.WriteLine("req: ", request);
-                    Console.WriteLine("req.body: ", request.Body);
-                    // Console.WriteLine("req.body.length: ", request.Body.Length);
-
-                    int newValue = request.Body;
-                    Console.WriteLine("Int32.Parse(req.Body.Trim())");
-
-                    newSubmission.Id = _connectString;
-                    Console.WriteLine("newSubmission.Id = _connectString");
-
-                    newSubmission.List = new List<int>() { newValue };
-                    Console.WriteLine("newSubmission.List = new List<int>() { newValue };");
-
-                    Console.WriteLine("Modified newSubmission successfully");
-                }
-
-                try
-                {
-                    Console.WriteLine("begin PostListValue block");
-                    PostListValue(newSubmission).Wait();
-
-                    Console.WriteLine("PostListValue(newSubmission) successfully completed");
-
-                    return GoodResponse(newSubmission.List);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"PostlistValue failed - Message: {e}");
-                    return BadRequest("Failed to get Value from PostListValue", HttpStatusCode.InternalServerError);
-                    throw new Exception("Post itself failed: BAH!");
-                }
-
-            }
+          return GoodResponse(user.List);
         }
         catch (Exception e)
         {
-            Console.WriteLine("GetListValue Failed");
-
-            Console.WriteLine($"Error Message: {e.Message}");
-            return BadRequest("Submission Failed to Complete", HttpStatusCode.BadRequest);
-            throw new Exception("Submission Failed to Complete");
+          return BadRequest($"Failed to get Value from PostListValue - Message: {e.Message}", HttpStatusCode.InternalServerError);
         }
 
-
-        return BadRequest("Failed to save new submission");
+      }
     }
-
-    [LambdaFunction]
-    [HttpApi(LambdaHttpMethod.Delete, "/submissions")]
-
-    public async Task<APIGatewayHttpApiV2ProxyResponse> DeleteListAsync (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+    catch (Exception e)
     {
-        Console.WriteLine("What is the method?$$$$$");
-        Console.WriteLine(request.RequestContext.Http.Method);
-
-        if (request.RequestContext.Http.Method == "DELETE")
-        {
-            try
-            {
-                await _dbContext.DeleteAsync<SubmissionCollection>(_connectString);
-
-                return new APIGatewayHttpApiV2ProxyResponse()
-                {
-                    Body = "List deleted",
-                    StatusCode = (int)HttpStatusCode.NoContent
-                };
-            }
-            catch (Exception)
-            {
-                throw new Exception("Problem deleting Item");
-            }
-        }
-
-        return BadRequest("Incorrect Delete Request", HttpStatusCode.BadRequest);
-
+      Console.WriteLine($"Error Message: ");
+      return BadRequest($"Submission Failed to Complete - Error: {e.Message}", HttpStatusCode.BadRequest);
     }
+    return BadRequest("Failed to save new submission");
+  }
 
-    private static APIGatewayHttpApiV2ProxyResponse GoodResponse(List<int> list)
+  [LambdaFunction]
+  [HttpApi(LambdaHttpMethod.Delete, "/submissions")]
+
+  public async Task<APIGatewayHttpApiV2ProxyResponse> DeleteListAsync(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+  {
+    Console.WriteLine("What is the method?$$$$$");
+    Console.WriteLine(request.RequestContext.Http.Method);
+
+    if (request.RequestContext.Http.Method == "DELETE")
     {
+      try
+      {
+        await _dbContext.DeleteAsync<SubmissionCollection>(_connectString);
+
         return new APIGatewayHttpApiV2ProxyResponse()
         {
-            StatusCode = (int)HttpStatusCode.OK,
-            Body = System.Text.Json.JsonSerializer.Serialize(list)
+          Body = "List deleted",
+          StatusCode = (int)HttpStatusCode.NoContent
         };
+      }
+      catch (Exception)
+      {
+        throw new Exception("Problem deleting Item");
+      }
     }
 
-    private static APIGatewayHttpApiV2ProxyResponse BadRequest(String message, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
+    return BadRequest("Incorrect Delete Request", HttpStatusCode.BadRequest);
+
+  }
+
+  private static APIGatewayHttpApiV2ProxyResponse GoodResponse(List<int> list)
+  {
+    return new APIGatewayHttpApiV2ProxyResponse()
     {
-        return new APIGatewayHttpApiV2ProxyResponse()
-        {
-            StatusCode = (int)statusCode,
-            Body = message
-        };
-    }
+      StatusCode = (int)HttpStatusCode.OK,
+      Body = System.Text.Json.JsonSerializer.Serialize(list)
+    };
+  }
 
-    /// <summary>
-    /// Retrieves current value list store and returns it to the caller.
-    /// </summary>
-    /// <returns>SubmissionCollection</returns>
-    private async Task<SubmissionCollection> GetListValue()
+  private static APIGatewayHttpApiV2ProxyResponse BadRequest(String message, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
+  {
+    return new APIGatewayHttpApiV2ProxyResponse()
     {
-        var result = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+      StatusCode = (int)statusCode,
+      Body = message
+    };
+  }
 
-        if (result != null)
-        {
-            return result;
-        } else
-        {
-            var init_submission = new SubmissionCollection() { Id = _connectString, List = { } };
-            
-            await _dbContext.SaveAsync(init_submission);
+  /// <summary>
+  /// Retrieves current value list store and returns it to the caller.
+  /// </summary>
+  /// <returns>SubmissionCollection</returns>
+  private async Task<SubmissionCollection> GetListValue()
+  {
+    var result = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
 
-            return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
-        }
-    }
-
-    private async Task PostListValue(SubmissionCollection newSubmission)
+    if (result != null)
     {
-        await _dbContext.SaveAsync(newSubmission);
+      return result;
     }
+    else
+    {
+      var init_submission = new SubmissionCollection() { Id = _connectString, List = { } };
+
+      await _dbContext.SaveAsync(init_submission);
+
+      return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+    }
+  }
+
+  private async Task PostListValue(SubmissionCollection newSubmission)
+  {
+    await _dbContext.SaveAsync(newSubmission);
+  }
 }
 
 public class SubmissionCollection
 {
-    public SubmissionCollection() { 
-        Id = Guid.NewGuid();
-        List = new List<int> { };
-    }
+  public SubmissionCollection()
+  {
+    Id = Guid.NewGuid();
+    List = new List<int> { };
+  }
 
-    [DynamoDBHashKey]
-    public Guid Id;
+  [DynamoDBHashKey]
+  public Guid Id;
 
-    [JsonPropertyName("list")]
-    public List<int> List { get; set; }
+  [JsonPropertyName("list")]
+  public List<int> List { get; set; }
 }
 
 public class RequestBody
 {
-    [JsonPropertyName("body")]
-    public int Body { get; set; }
+  [JsonPropertyName("body")]
+  public int Body { get; set; }
 }
