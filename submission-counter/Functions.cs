@@ -6,6 +6,7 @@ using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2;
 using System.Net;
 using Amazon.Lambda.APIGatewayEvents;
+using System.Security.Cryptography.X509Certificates;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
@@ -44,7 +45,7 @@ public class Functions
             return GoodResponse(list.List);
         }
 
-        return BadRequest("List is null");
+        return BadRequest("List not found", HttpStatusCode.NotFound);
 
     }
 
@@ -53,38 +54,84 @@ public class Functions
     /// </summary>
     [LambdaFunction]
     [HttpApi(LambdaHttpMethod.Post, "/submissions")]
-    public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] APIGatewayHttpApiV2ProxyRequest req, ILambdaContext context)
+    public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] RequestBody request, ILambdaContext context)
     {
+
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request));
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request.Body));
+
         try
         {
+            Console.WriteLine("Begin try block");
             var newUser = await GetListValue();
+
+            Console.WriteLine("newUser Received succesfully");
+            Console.WriteLine("newUser $$$$: ", newUser);
+
 
             if (newUser != null)
             {
-                newUser.List.Add(Int32.Parse(req.Body));
+                Console.WriteLine("newUser is not null");
 
-                var newSubmission = new SubmissionCollection()
+                var newSubmission = new SubmissionCollection();
+
+                if (newUser.List.Count > 0)
                 {
-                    Id = _connectString,
-                    List = newUser.List,
-                };
+                    Console.WriteLine("newUser.List.Count > 0 so...");
+
+                    newUser.List.Add(request.Body);
+                    Console.WriteLine("newUser.List.Add(Int32.Parse(req.Body) Completed");
+
+                    newSubmission = newUser;
+
+                    Console.WriteLine("Add req.Body to newUser");
+                    Console.WriteLine("newSubmission = newUser");
+
+                }
+                else
+                {
+                    Console.WriteLine("newUser has no elements so...");
+                    Console.WriteLine("newSubmission freshly assigned defaults");
+                    Console.WriteLine("req: ", request);
+                    Console.WriteLine("req.body: ", request.Body);
+                    // Console.WriteLine("req.body.length: ", request.Body.Length);
+
+                    int newValue = request.Body;
+                    Console.WriteLine("Int32.Parse(req.Body.Trim())");
+
+                    newSubmission.Id = _connectString;
+                    Console.WriteLine("newSubmission.Id = _connectString");
+
+                    newSubmission.List = new List<int>() { newValue };
+                    Console.WriteLine("newSubmission.List = new List<int>() { newValue };");
+
+                    Console.WriteLine("Modified newSubmission successfully");
+                }
 
                 try
                 {
-                await PostListValue(newSubmission);
+                    Console.WriteLine("begin PostListValue block");
+                    PostListValue(newSubmission).Wait();
+
+                    Console.WriteLine("PostListValue(newSubmission) successfully completed");
+
                     return GoodResponse(newSubmission.List);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-
-                    new Exception("Post itself failed: BAH!");
+                    Console.WriteLine($"PostlistValue failed - Message: {e}");
+                    return BadRequest("Failed to get Value from PostListValue", HttpStatusCode.InternalServerError);
+                    throw new Exception("Post itself failed: BAH!");
                 }
 
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Console.WriteLine("GetListValue Failed");
 
+            Console.WriteLine($"Error Message: {e.Message}");
+            return BadRequest("Submission Failed to Complete", HttpStatusCode.BadRequest);
             throw new Exception("Submission Failed to Complete");
         }
 
@@ -95,23 +142,31 @@ public class Functions
     [LambdaFunction]
     [HttpApi(LambdaHttpMethod.Delete, "/submissions")]
 
-    public async Task<APIGatewayHttpApiV2ProxyResponse> DeleteListAsync ()
+    public async Task<APIGatewayHttpApiV2ProxyResponse> DeleteListAsync (APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
     {
-        try
-        {
-            await _dbContext.DeleteAsync<SubmissionCollection>(_connectString);
+        Console.WriteLine("What is the method?$$$$$");
+        Console.WriteLine(request.RequestContext.Http.Method);
 
-            return new APIGatewayHttpApiV2ProxyResponse()
+        if (request.RequestContext.Http.Method == "DELETE")
+        {
+            try
             {
-                Body = "List deleted",
-                StatusCode = (int)HttpStatusCode.NoContent
-            };
-        }
-        catch (Exception)
-        {
+                await _dbContext.DeleteAsync<SubmissionCollection>(_connectString);
 
-            throw new Exception("Problem deleting Item");
+                return new APIGatewayHttpApiV2ProxyResponse()
+                {
+                    Body = "List deleted",
+                    StatusCode = (int)HttpStatusCode.NoContent
+                };
+            }
+            catch (Exception)
+            {
+                throw new Exception("Problem deleting Item");
+            }
         }
+
+        return BadRequest("Incorrect Delete Request", HttpStatusCode.BadRequest);
+
     }
 
     private static APIGatewayHttpApiV2ProxyResponse GoodResponse(List<int> list)
@@ -123,11 +178,11 @@ public class Functions
         };
     }
 
-    private static APIGatewayHttpApiV2ProxyResponse BadRequest(String message)
+    private static APIGatewayHttpApiV2ProxyResponse BadRequest(String message, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
     {
         return new APIGatewayHttpApiV2ProxyResponse()
         {
-            StatusCode = (int)HttpStatusCode.BadGateway,
+            StatusCode = (int)statusCode,
             Body = message
         };
     }
@@ -173,12 +228,8 @@ public class SubmissionCollection
     public List<int> List { get; set; }
 }
 
-public class SubmissionCollectionRequest
+public class RequestBody
 {
-    public SubmissionCollectionRequest (int newValue)
-    {
-        NewValue = newValue;
-    }
     [JsonPropertyName("body")]
-    public int NewValue { get; set; }
+    public int Body { get; set; }
 }
