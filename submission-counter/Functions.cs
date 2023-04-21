@@ -106,7 +106,7 @@ public class Functions
     {
       try
       {
-        await _dbContext.DeleteAsync<SubmissionCollection>(_connectString);
+        await _dbContext.DeleteAsync<SubmissionBody>(_connectString);
 
         return new APIGatewayHttpApiV2ProxyResponse()
         {
@@ -163,10 +163,13 @@ public class Functions
       SubmissionCollection finalResult = new SubmissionCollection
       {
         Id = _connectString,
-        List = new List<string>() { result.List }
+        List = new List<string>() { result.List.Trim() }
       };
 
-      Console.WriteLine("finalResult success");
+            // Remove all empty string
+            finalResult.List.RemoveAll(x => x == "");
+
+            Console.WriteLine("finalResult success");
 
       return finalResult;
     }
