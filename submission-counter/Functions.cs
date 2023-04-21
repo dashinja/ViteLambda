@@ -56,16 +56,21 @@ public class Functions
   [HttpApi(LambdaHttpMethod.Post, "/submissions")]
   public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] RequestBody request, ILambdaContext context)
   {
+    Console.WriteLine("request: ");
 
     Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request));
     Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request.Body));
 
     try
     {
+      Console.WriteLine("starting getListValue for POST");
       var user = await GetListValue();
-
-      if (user != null)
+      Console.WriteLine("user: ");
+      Console.WriteLine(user);
+      if (user != null && request.Body != "")
       {
+        Console.WriteLine("passes user not null && .body not empty string for POST");
+
         user.List.Add(request.Body);
 
         try
@@ -83,7 +88,7 @@ public class Functions
     }
     catch (Exception e)
     {
-      Console.WriteLine($"Error Message: ");
+      Console.WriteLine($"Error Message: {e}");
       return BadRequest($"Submission Failed to Complete - Error: {e.Message}", HttpStatusCode.BadRequest);
     }
     return BadRequest("Failed to save new submission");
@@ -119,7 +124,7 @@ public class Functions
 
   }
 
-  private static APIGatewayHttpApiV2ProxyResponse GoodResponse(List<int> list)
+  private static APIGatewayHttpApiV2ProxyResponse GoodResponse(List<string> list)
   {
     return new APIGatewayHttpApiV2ProxyResponse()
     {
@@ -143,25 +148,92 @@ public class Functions
   /// <returns>SubmissionCollection</returns>
   private async Task<SubmissionCollection> GetListValue()
   {
-    var result = await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+    Console.WriteLine("begin GetListValue()");
+    var result = await _dbContext.LoadAsync<SubmissionBody>(_connectString);
+    Console.WriteLine("GetListValue() Successful");
+    Console.WriteLine("result value: ");
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(result));
+
 
     if (result != null)
     {
-      return result;
+      Console.WriteLine("pass result.Id != _connectString ");
+
+      // Values transformed from string to Submission Collection Type
+      SubmissionCollection finalResult = new SubmissionCollection
+      {
+        Id = _connectString,
+        List = new List<string>() { result.List }
+      };
+
+      Console.WriteLine("finalResult success");
+
+      return finalResult;
     }
     else
     {
+      Console.WriteLine("begin else statement as result IS '' in GetListValue()");
+
       var init_submission = new SubmissionCollection() { Id = _connectString, List = { } };
 
-      await _dbContext.SaveAsync(init_submission);
+      Console.WriteLine("successfully make init_submission in GetListValue()");
 
-      return await _dbContext.LoadAsync<SubmissionCollection>(_connectString);
+      // await PostListValue(init_submission);
+
+      // Console.WriteLine("successful PostListValue using init_submission in  GetListValue()");
+
+      Console.WriteLine("return simply 'init_submission'");
+
+      return init_submission;
     }
   }
 
   private async Task PostListValue(SubmissionCollection newSubmission)
   {
-    await _dbContext.SaveAsync(newSubmission);
+    try
+    {
+      Console.WriteLine("begin PostListValue()");
+
+      if (newSubmission.List != null)
+      {
+        // Values saved to DB as String
+        var saveToDb = string.Join(", ", newSubmission.List);
+        Console.WriteLine("successful saveToDb in PostListValue()");
+
+        Console.WriteLine("saveToDb value");
+        Console.WriteLine(saveToDb);
+
+        Console.WriteLine("START save of savetodb INTO DB");
+        if (saveToDb != "")
+        {
+          var postList = new SubmissionBody()
+          {
+            Id = _connectString,
+            List = saveToDb
+          };
+          await _dbContext.SaveAsync(postList);
+          Console.WriteLine("FINISH successful save of savetodb INTO DB");
+        }
+        else
+        {
+          Console.WriteLine("saveToDb is actually an empty string");
+        }
+      }
+      else
+      {
+        Console.WriteLine("Somehow newSubmission.List IS null... cannot go on");
+
+        throw new Exception("newSubmission.List is null...terminating");
+      }
+
+
+    }
+    catch (Exception e)
+    {
+      Console.WriteLine($"Error in PostListValue: {e}");
+      throw;
+    }
+
   }
 }
 
@@ -170,18 +242,33 @@ public class SubmissionCollection
   public SubmissionCollection()
   {
     Id = Guid.NewGuid();
-    List = new List<int> { };
+    List = new List<string> { };
   }
 
   [DynamoDBHashKey]
   public Guid Id;
 
   [JsonPropertyName("list")]
-  public List<int> List { get; set; }
+  public List<string> List { get; set; }
+}
+
+public class SubmissionBody
+{
+  public SubmissionBody()
+  {
+    Id = Guid.NewGuid();
+    List = "";
+  }
+
+  [DynamoDBHashKey]
+  public Guid Id;
+
+  [DynamoDBProperty("List")]
+  public string List { get; set; }
 }
 
 public class RequestBody
 {
   [JsonPropertyName("body")]
-  public int Body { get; set; }
+  public string Body { get; set; }
 }

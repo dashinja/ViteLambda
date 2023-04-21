@@ -6,7 +6,7 @@
         "dotnet lambda help",
         "All the command line options for the Lambda command can be specified in this file."
     ],
-    "profile"     : "learning_temp",
+    "profile"     : "default",
     "region"      : "us-east-1",
     "configuration" : "Release",
     "s3-prefix"     : "submission-counter/",
