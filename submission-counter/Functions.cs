@@ -6,7 +6,6 @@ using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2;
 using System.Net;
 using Amazon.Lambda.APIGatewayEvents;
-using System.Security.Cryptography.X509Certificates;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
 
@@ -56,11 +55,6 @@ public class Functions
   [HttpApi(LambdaHttpMethod.Post, "/submissions")]
   public async Task<APIGatewayHttpApiV2ProxyResponse> PostListAsync([FromBody] RequestBody request, ILambdaContext context)
   {
-    Console.WriteLine("request: ");
-
-    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request));
-    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(request.Body));
-
     try
     {
       Console.WriteLine("starting getListValue for POST");
@@ -69,8 +63,6 @@ public class Functions
       Console.WriteLine(user);
       if (user != null && request.Body != "")
       {
-        Console.WriteLine("passes user not null && .body not empty string for POST");
-
         user.List.Add(request.Body);
 
         try
@@ -88,7 +80,6 @@ public class Functions
     }
     catch (Exception e)
     {
-      Console.WriteLine($"Error Message: {e}");
       return BadRequest($"Submission Failed to Complete - Error: {e.Message}", HttpStatusCode.BadRequest);
     }
     return BadRequest("Failed to save new submission");
@@ -99,9 +90,6 @@ public class Functions
 
   public async Task<APIGatewayHttpApiV2ProxyResponse> DeleteListAsync(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
   {
-    Console.WriteLine("What is the method?$$$$$");
-    Console.WriteLine(request.RequestContext.Http.Method);
-
     if (request.RequestContext.Http.Method == "DELETE")
     {
       try
@@ -148,17 +136,10 @@ public class Functions
   /// <returns>SubmissionCollection</returns>
   private async Task<SubmissionCollection> GetListValue()
   {
-    Console.WriteLine("begin GetListValue()");
     var result = await _dbContext.LoadAsync<SubmissionBody>(_connectString);
-    Console.WriteLine("GetListValue() Successful");
-    Console.WriteLine("result value: ");
-    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(result));
-
 
     if (result != null)
     {
-      Console.WriteLine("pass result.Id != _connectString ");
-
       // Values transformed from string to Submission Collection Type
       SubmissionCollection finalResult = new SubmissionCollection
       {
@@ -166,26 +147,14 @@ public class Functions
         List = new List<string>() { result.List.Trim() }
       };
 
-            // Remove all empty string
-            finalResult.List.RemoveAll(x => x == "");
-
-            Console.WriteLine("finalResult success");
+      // Remove all empty string
+      finalResult.List.RemoveAll(x => x == "");
 
       return finalResult;
     }
     else
     {
-      Console.WriteLine("begin else statement as result IS '' in GetListValue()");
-
       var init_submission = new SubmissionCollection() { Id = _connectString, List = { } };
-
-      Console.WriteLine("successfully make init_submission in GetListValue()");
-
-      // await PostListValue(init_submission);
-
-      // Console.WriteLine("successful PostListValue using init_submission in  GetListValue()");
-
-      Console.WriteLine("return simply 'init_submission'");
 
       return init_submission;
     }
@@ -195,18 +164,11 @@ public class Functions
   {
     try
     {
-      Console.WriteLine("begin PostListValue()");
-
       if (newSubmission.List != null)
       {
         // Values saved to DB as String
         var saveToDb = string.Join(", ", newSubmission.List);
-        Console.WriteLine("successful saveToDb in PostListValue()");
 
-        Console.WriteLine("saveToDb value");
-        Console.WriteLine(saveToDb);
-
-        Console.WriteLine("START save of savetodb INTO DB");
         if (saveToDb != "")
         {
           var postList = new SubmissionBody()
@@ -215,7 +177,6 @@ public class Functions
             List = saveToDb
           };
           await _dbContext.SaveAsync(postList);
-          Console.WriteLine("FINISH successful save of savetodb INTO DB");
         }
         else
         {
@@ -224,8 +185,6 @@ public class Functions
       }
       else
       {
-        Console.WriteLine("Somehow newSubmission.List IS null... cannot go on");
-
         throw new Exception("newSubmission.List is null...terminating");
       }
 
