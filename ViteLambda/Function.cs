@@ -20,7 +20,7 @@ public class Function
   public Function()
   {
         _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-        _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
+        _connectString = Guid.Parse(Environment.GetEnvironmentVariable("CONNECT_STRING"));
   }
   /// <summary>
   /// A simple function that takes an input and returns it as a response.
