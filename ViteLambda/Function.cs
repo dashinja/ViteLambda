@@ -6,6 +6,7 @@ using System.Net.Mime;
 using System.Reflection.Emit;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2;
+using DotNetEnv;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
@@ -19,8 +20,9 @@ public class Function
 
   public Function()
   {
+    Env.Load();
         _dbContext = new DynamoDBContext(new AmazonDynamoDBClient());
-        _connectString = Guid.Parse("0405ee69-2efd-43ec-925a-086e25bf6459");
+        _connectString = Guid.Parse(Environment.GetEnvironmentVariable("CONNECT_STRING"));
   }
   /// <summary>
   /// A simple function that takes an input and returns it as a response.
